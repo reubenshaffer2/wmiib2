@@ -1,4 +1,4 @@
-WMIIB2 - A Window Manager Independent Icon Box (2nd attempt)
+WMIIB2 - A Window Manager Independent Icon Box (v2)
 ------------------------------------------------------------
 
 Introduction
@@ -26,75 +26,19 @@ preference) a thumbnail of the actual window and you could select the order
 preference on which would be shown, and it had several other options that I
 will not go into detail about right now.
 
-So, to make a long story short, Enlightenment (16) is pretty out of date now.
-I still have it installed, and use it occasionally, but more often I use
-Compiz as my WM.  I don't care for "desktop environments" that most people
-use, though.  Most of them have moved to a model where they are all
-practically identical to one another.  The model where there are "icons" that
-are application launchers situated all over the "desktop" which sits on top
-of, or is, the root window, a "taskbar" that shows all of the applications,
-iconified or not and also contains a "system tray", or "notification area",
-and a "start menu" just like the one Microsoft put in their "Windows 95" user
-interface.  I don't want to see "icons" on my "desktop".  I want my windows to
-go on my desktop.  I don't want a "start menu" with everything in it, and if I
-decide that I do want one, I should be able to get to it by clicking anywhere
-on the screen.  I don't need to see the names of the running applications I'm
-looking at displayed on a persistent bar on my screen.  I can see them, and I
-can see their title bars (if I want them to have one).  And the story didn't
-get any shorter...
-
-So I'll try this again, and I will begin with something I learned years ago.
-The "Unix Philosophy" can essentially be summarized as writing many small
-programs that each do one simple thing and do it well, and are all designed to
-work together to perform more complex tasks.  This philosophy was documented
-long ago by Doug McIlroy, summarized by Peter H. Salus years later, and this
-idea was further summarized and reiterated many times over the decades by many
-different people in many different publications.  It was really aimed toward
-the way that command line "tools" that we use every day in Unix should be
-designed and implemented, but I believe it applies just as much to graphical
-user interfaces now.  And that is what started me on the projects like this
-one.
-
-A window manager does just that.  It manages windows.  It controls where they
-are drawn on the screen, controls which one receives input events from our
-various input devices, and that's pretty much the end of it.  Many have added
-some type of trivial menu or something that is triggered by some interaction
-with the root window.  Most add window decorations like frames and title bars
-to the windows it is managing.  Some do a lot more, even to the point where
-they become bloated with features that could have, and probably should have
-been a dozen or more different programs.
-
-A program that displays some persistent panel on your screen would best be
-described as a "panel" and has been called that on several occasions.  They
-usually have the ability to "dock" other programs, and are sometimes called a
-dock as well.  They may contain a "task bar" like I described it earlier, a
-pager, one or more menus, a "system tray", clock, and/or other things.  The
-better ones can be customized completely so that they contain what, and only
-what, you want them to.  The worst of them force a specific set of tools on
-you in a specific layout.
-
-This application is none of these things.  It is never intended to be any of
-these things.  It is simply what it is: an IconBox; a place where windows go
-when they leave the main part of the screen and become iconified.  It is a
-graphical tool written in the Unix Philosophy.  It's small, it does one job,
-and it tries to do it well.  It is one of several programs of this type that
-I have written and plan to write in my goal of creating a modular desktop
-environment.
-
-And it's not alone.  There are a number of independent "system trays" that are
-available to use on your desktop.  There are a number of window managers that
-do little or nothing more than manage windows.  There are a lot of "docks" and
-"panels" available that can be integrated into any desktop environment.  There
-are programs that draw certain things directly on the root window.  I could go
-on and on about this, but I won't.
-
-Instead, I'll just summarize.  We buy the computer.  We own the computer.  We
-made the software and own it (if it's "free" software) and we should.  We
-should be able to decide how the computer is going to work, how it's going to
-work, what it will do, and how it will do it.  User interfaces and, desktop
-environments in particular, seem to be trying to ignore this and force their
-ideas on their users instead.  I want to help give people other options and
-so I have created these graphical tools.
+Now, I still use Enlightenment 16 sometimes, but I often use Compiz or
+something else instead, but I wanted an IconBox that worked like the one in
+the old version of Enlightenment, or at least similar, and I wanted something
+that would "just work" with practically any window manager, and this is it.
+It's part of a collection of other tools that I've been working on that follow
+the "Unix Philosophy" of creating small, specialized programs that do one job,
+do it well, and can be easily integrated with other programs.  The philosophy
+was more intended for the command line tools that we use every day, but I
+believe that the "desktop environment" is a place where this philosophy makes
+as much, if not more, sense and where it's really getting lost on it these
+days.  So, without further ado, I'll list and briefly describe some of the
+other tools that are closely related to this project and then follow it up
+with some brief documentation on this project, WMIIB2.
 
 The tools
 ---------
