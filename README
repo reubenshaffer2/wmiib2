@@ -1,0 +1,345 @@
+WMIIB2 - A Window Manager Independent Icon Box (2nd attempt)
+------------------------------------------------------------
+
+Introduction
+------------
+I've written a short story explaining why I made all of this, why I decided to
+do it this way, and outlining some of the other programs that are part of the
+system it works with.  If you are just looking for information about the
+WMIIB2 application itself, scroll down about 180 lines to "WMIIB2 Details".
+
+The story
+---------
+
+Years ago, there was a window manager called Enlightenment.  Okay, so there
+still is, but this one was a lot different from the newer versions.  It was
+called DR16, or E16, or something like that anyway.  After that, the people
+that made it, or that had just taken over its maintenance, decided to
+completely rework the way that it was made and, in doing so, made something
+that had a very different appearance and was missing many of the features
+that I liked most.  One of those things was the "IconBox".  The IconBox was a
+place where windows go when they get "Iconified" (what many people call
+"minimizing").  The IconBox would catch the windows when they get iconified,
+and had some options about how to display them inside the IconBox.  You could
+have it show the application's icon, a default icon, or (my personal
+preference) a thumbnail of the actual window and you could select the order
+preference on which would be shown, and it had several other options that I
+will not go into detail about right now.
+
+So, to make a long story short, Enlightenment (16) is pretty out of date now.
+I still have it installed, and use it occasionally, but more often I use
+Compiz as my WM.  I don't care for "desktop environments" that most people
+use, though.  Most of them have moved to a model where they are all
+practically identical to one another.  The model where there are "icons" that
+are application launchers situated all over the "desktop" which sits on top
+of, or is, the root window, a "taskbar" that shows all of the applications,
+iconified or not and also contains a "system tray", or "notification area",
+and a "start menu" just like the one Microsoft put in their "Windows 95" user
+interface.  I don't want to see "icons" on my "desktop".  I want my windows to
+go on my desktop.  I don't want a "start menu" with everything in it, and if I
+decide that I do want one, I should be able to get to it by clicking anywhere
+on the screen.  I don't need to see the names of the running applications I'm
+looking at displayed on a persistent bar on my screen.  I can see them, and I
+can see their title bars (if I want them to have one).  And the story didn't
+get any shorter...
+
+So I'll try this again, and I will begin with something I learned years ago.
+The "Unix Philosophy" can essentially be summarized as writing many small
+programs that each do one simple thing and do it well, and are all designed to
+work together to perform more complex tasks.  This philosophy was documented
+long ago by Doug McIlroy, summarized by Peter H. Salus years later, and this
+idea was further summarized and reiterated many times over the decades by many
+different people in many different publications.  It was really aimed toward
+the way that command line "tools" that we use every day in Unix should be
+designed and implemented, but I believe it applies just as much to graphical
+user interfaces now.  And that is what started me on the projects like this
+one.
+
+A window manager does just that.  It manages windows.  It controls where they
+are drawn on the screen, controls which one receives input events from our
+various input devices, and that's pretty much the end of it.  Many have added
+some type of trivial menu or something that is triggered by some interaction
+with the root window.  Most add window decorations like frames and title bars
+to the windows it is managing.  Some do a lot more, even to the point where
+they become bloated with features that could have, and probably should have
+been a dozen or more different programs.
+
+A program that displays some persistent panel on your screen would best be
+described as a "panel" and has been called that on several occasions.  They
+usually have the ability to "dock" other programs, and are sometimes called a
+dock as well.  They may contain a "task bar" like I described it earlier, a
+pager, one or more menus, a "system tray", clock, and/or other things.  The
+better ones can be customized completely so that they contain what, and only
+what, you want them to.  The worst of them force a specific set of tools on
+you in a specific layout.
+
+This application is none of these things.  It is never intended to be any of
+these things.  It is simply what it is: an IconBox; a place where windows go
+when they leave the main part of the screen and become iconified.  It is a
+graphical tool written in the Unix Philosophy.  It's small, it does one job,
+and it tries to do it well.  It is one of several programs of this type that
+I have written and plan to write in my goal of creating a modular desktop
+environment.
+
+And it's not alone.  There are a number of independent "system trays" that are
+available to use on your desktop.  There are a number of window managers that
+do little or nothing more than manage windows.  There are a lot of "docks" and
+"panels" available that can be integrated into any desktop environment.  There
+are programs that draw certain things directly on the root window.  I could go
+on and on about this, but I won't.
+
+Instead, I'll just summarize.  We buy the computer.  We own the computer.  We
+made the software and own it (if it's "free" software) and we should.  We
+should be able to decide how the computer is going to work, how it's going to
+work, what it will do, and how it will do it.  User interfaces and, desktop
+environments in particular, seem to be trying to ignore this and force their
+ideas on their users instead.  I want to help give people other options and
+so I have created these graphical tools.
+
+The tools
+---------
+
+They are all designed to work alone or with each other.  It's up to you to
+decide what parts you want and how you want them to work.  Here is a list of
+the tools that are related to this project (some may not yet be available):
+
+DeskMenu (or DesktopMenu): adds a menubar to the screen.  It is similar to the
+menu bar in the Apple MacOS, but doesn't integrate other program's menus.  It
+just provides a menu for starting applications, without some master button to
+get to them.  It features configurable color schemes, a built in editor for
+menus, color schemes, and settings, a "window list" submenu type that lists
+all of your running X11 client windows, and a "scripted submenu" type that
+builds a menu of options from the output of a shell script or other program
+and rebuilds it if/when certain conditions are met.  It has quite a few user
+controlled option settings, and could use a few more, but that is all it does.
+
+WMIIB2 (this program): adds an IconBox to the screen.  The user has several
+option settings to configure where it puts the IconBox and what it looks like.
+All it does, and all it is, is a box where iconified windows are displayed.
+
+DeskIcon (or DesktopIcon): adds "desktop icons" (launchers) to the root window
+of your screen.  Each "icon" is an independent launcher process and can be
+configured to start any type of program you want.  Additional icons can be
+created by them as well as "DeskDrawers" (described below).  They are very
+small, simple programs that just launch programs.
+
+DeskDrawer (or DesktopDrawer): adds "desktop icons" that open popup menus that
+can contain any number of options, each capable of executing any program.
+This was designed as a supplement to DeskIcon, enabling one launcher to
+encapsulate multiple other launchers.
+
+IconManager: a supplement to DeskIcon and DeskDrawer that implements
+persistence across multiple sessions.  It's part of both the DeskIcon and
+DeskDrawer applications, and more like a library that's statically linked
+into both.  You won't need to worry much about this, but there is a simple
+shell script that can be used to restart the icons when a user logs in.
+
+DeskPager (or DesktopPager): is not finished yet.  I have little use for it
+myself, but it seems a necessary part of the system for some users.
+
+LCD_DeskClock: is just a clock that looks like an old LED clock (yeah, bad
+naming).  It has multiple timezones and the currently displayed time zone can
+be easily changed at any time via the built in context menu.  The colors of
+the time can also be changed quickly and easily from the same menu.
+
+BCD_DeskClock: is just a clock that shows the current time in BCD in what
+looks like vertically stacked LED lights.
+
+DeskCalendar (or DesktopCalendar): adds a calendar to the desktop.  Events can
+be entered directly into the calendar and will be stored so that they remain
+indefinitely.  This program is in need of a rewrite, so more details cannot be
+offered at this time.  The previous implementation displayed only one week at
+a time and the user could move forward and backward one week at a time with a
+single click.  It also allowed for color schemes to be selected.  Planned was
+a way to "link" multiple calendars somehow to communicate appointments and/or
+deadlines with others, but I cannot recall whether it was implemented and I am
+uncertain as to how I would best handle this now.  This program will be
+rewritten and released in the future and will include, at least, the mentioned
+features and probably a few more.
+
+LogMon: adds a log monitor to the desktop, very similar to the program Xtail.
+It allows color coding and includes a scroll buffer, though, so it will accept
+input focus even though it sits directly on the root window and is an
+undecorated and sticky window.  It has a built-in system for graphically
+configuring what logs to watch and what colors to use.
+
+PickWM: is a program that is started by xinit/xsession when a user logs in.
+It is designed to run while no WM is present, and gives the user a list of
+window managers to choose from as well as a list of programs that can be
+checked or unchecked to start at the same time.  The user is able to add,
+remove, and modify both window managers and extra programs, and everything
+is saved automatically.  Once the window manager is started, it creates a
+"tray icon" that a capable system tray can display.  The tray icon will
+display the same window again, allowing the user to edit the entries that are
+in the lists, log off, or switch to another window manager instantly.  PickWM
+was designed to supplement the many other programs listed here by giving an
+easy way to pick what will and will not be started as well as to enable easy
+switching between window managers.
+
+-----------------------------------------------------------------------------
+    WMIIB2 Details
+-----------------------------------------------------------------------------
+
+Description
+-----------
+WMIIB2 is pretty simple.  It was written using Qt5 using a lot of XCB library
+functions to acquire the window pixmaps, keep track of clients and the events
+that are sent when they are changed, closed, iconified and things like that,
+and to send the events necessary to deiconify the windows when the use selects
+them.  It requires the "composite" extension to X11 and also the "damage"
+extension to work (although the damage requirement may soon be removed).  It
+has currently only been tested with Compiz, though it should work with any
+compositing WM that supports the NET_WM EWMH standard and, at least partially,
+some that do not.  Clicking an icon with the left mouse button will deiconify
+the window, and clicking anywhere in the iconbox, even on a window, with the
+right mouse button will open a popup menu that provides access to the settings
+window as well as an option to close the iconbox.  Clicking on the iconbox
+background with the left mouse button will also open the menu.
+
+
+IconBox Settings
+----------------
+The settings window has several options:
+IconBox Location:
+  The location (corner of the screen) that should be the "origin" of the
+  iconbox.  Icons will be stacked starting in this corner.
+Icon Size:
+  The size of the icons or, more precisely, a square bounding box that the
+  icons will be scaled to fit into.
+Transparent Background:
+  If selected, the background of the iconbox is masked so that it appears
+  invisible.  A small square will be shown in the corner specified by
+  "IconBox Location" to allow access to the menu even if there are no icons
+  inside it to right click on.
+Background Color/Border Color:
+  When the background is transparent, this determines the color to be used for
+  drawing a small border around each icon as well as the small square "button"
+  in the corner of the iconbox.  When the background is not transparent, this
+  determines the color of the entire background of the iconbox.
+Icon Placement:
+  This option determines whether the use prefers to stack new icons
+  horizontally or vertically as they are added to the iconbox.  When the
+  entire screen is filled in this direction, a new row/column will be added.
+Size:
+  If set to "Fixed", additional options are available to specify the width as
+  well as the height of the iconbox, constrained to the screen size and icon
+  size (plus a small margin).  In this case, the iconbox will not grow as new
+  icons are added.  An option to add scrollbars may be added in the future for
+  users that prefer a fixed size iconbox.
+
+  If set to "Growing", the iconbox will grow to fit icons as they are added.
+  It will retain a rectangular shape, so after it fills the screen in the
+  direction selected in "Icon Placement" and a new icon is added, it will
+  expand in the other direction enough to fit an entire row.  It will always
+  be at least large enough to contain a single icon.
+
+All settings are saved as soon as they are changed, but some may not be
+applied until the settings window is closed or iconified.  They are stored
+using the QSettings class in Qt5, so you will need to refer to the Qt5 manual
+for details about how and where this is stored on your specific system.  Even
+on Unix/Linux based systems, this can vary depending on what other packages
+are installed and configured on your system.
+
+Requirements
+------------
+If your distribution uses binary packages and contains "dev" or "devel"
+versions of them, you will need those.
+Before you can build the program, you will need at least the following:
+
+  Qt version 5
+    - unsure of minor version requirement, developed with 5.11.1.
+  Qt modules: X11extras, gui, widgets
+    - some distributions may package these separately.
+  XCB (X11 C Bindings)
+    - unsure of version requirement, developed with 1.13.1.
+  XCB modules: proto (headers), composite, damage
+    - some distributions may package these separately.
+
+  X11 requirements:
+    composite version 0.2 or greater (installed and enabled)
+    damage version 1.1 or greater (installed and enabled)
+    * damage really is not needed and may not be required in future versions.
+
+  A window manager that complies with the EWMH specification.  It should
+  at least implement the majority of version 1.3.  The specification can
+  be found here: https://standards.freedesktop.org/wm-spec/wm-spec-latest.html
+  More information about this is also here: https://www.freedesktop.org/wiki/
+
+  This application was built and tested with Compiz version 0.8.8 being used
+  only as a compositing window manager with no desktop environment.
+
+Installation
+------------
+WMIIB2 is provided by the author only as source code on GitHub at
+https://github.com/reubenshaffer2/wmiib2
+
+Once you have cloned the repository or downloaded and unpacked the source code
+the only things you need to do is first run the following command:
+
+qmake wmiib2.pro
+
+This will generate a Makefile that can be used to build the program using
+whatever compiler and build system that your system uses.  Once that is done,
+you just need to run the following command:
+
+make
+
+And that should compile the program.  Once that is finished, you should have
+a wmiib2 executable file that you can put anywhere or run it from where it is.
+I did not explicitly package an icon with it, but you can feel free to use the
+image in images/Default.png if you like.  I also did not include any kind of
+application launchers as I do not use them.  Creating Something like that is
+relatively simple and, if someone else sends me one, I may include it.
+
+So that's it.  Now you can just run the "wmiib2" program and you should get an
+iconbox.  The default iconbox is a fixed size, non-transparent, minimum sized
+icons, minimum sized iconbox in the bottom right corner with horizontal icon
+placement and default system colors.  I recommend clicking it and opening the
+settings window to make some adjustments.  I personally prefer an icon size
+around 100 and a transparent background, but that's just me.
+
+License
+-------
+This file is part of WMIIB2.
+
+WMIIB2 is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+WMIIB2 is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with WMIIB2.  If not, see <https://www.gnu.org/licenses/>.
+
+Credits
+-------
+Written by Reuben Robert Shaffer II <bob.shaffer.2@gmail.com>.
+
+I think I deserve a little credit for this, but I'm not the only one.
+
+This project would have been considerably more difficult if it were not for
+the work of Trolltech for creating the Qt platform, and Nokia for taking over
+their work and creating the newer versions of the toolkit.
+
+The work of the people at freedesktop.org, creating specifications and
+documenting those specifications as well as their work on XCB.
+
+Authors of various online tutorials and documents that helped me to understand
+more about the X11 protocol and how to work with some of these extensions.
+
+Whoever made that tux image that I use in my projects.
+
+Last but not least, Leslie Patterson for putting up with me and getting me
+coffee and food while I work on projects like this.
+
+...and many others, too many to list in fact.  The people that work on the
+Linux kernel, those at the free software foundation that maintain so many of
+the tools I use in my daily life as well as the license I will use for this
+project, and I wouldn't have found much of the documentation without Mozilla
+or Google, just to name a few.
+
+
