@@ -61,6 +61,7 @@ private slots:
     void AdjustFrameSize();
     void GenerateMask();
     void SettingsChanged();
+    void DelayedIconCreator();
 
 private:
     Ui::wmiib2 *ui;
@@ -78,6 +79,8 @@ private:
     int GetLayoutSize(int layoutIndex);
     int saved_icon_size;
     QPalette MyPalette;
+    QMap<xcb_window_t, QDateTime> unmapped_wins;
+    QTimer *iTimer;
 };
 
 #endif // WMIIB2_H

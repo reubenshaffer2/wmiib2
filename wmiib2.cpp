@@ -38,6 +38,11 @@ along with WMIIB2.  If not, see <https://www.gnu.org/licenses/>.
 #include <QRect>
 #include "settingswindow.h"
 #include <QMessageBox>
+#include <QDateTime>
+
+// the amount of grace time before an unmapped window is considered
+// iconified if it hasn't yet been destroyed, in msec.
+#define UNMAP_DESTROY_GRACE 300LL
 
 wmiib2::wmiib2(QWidget *parent) :
     QWidget(parent, Qt::FramelessWindowHint),
@@ -104,6 +109,9 @@ wmiib2::wmiib2(QWidget *parent) :
     MyPalette.setColor(QPalette::Window, setwin->GetBackgroundColor());
     setPalette(MyPalette);
     saved_icon_size = setwin->GetIconSize();
+    // create timer and connect it
+    iTimer = new QTimer(this);
+    connect(iTimer, SIGNAL(timeout()), this, SLOT(DelayedIconCreator()));
     // set up the layouts that will hold our icons
     ui->horizontalLayout->setContentsMargins(2, 2, 2, 2);
     itemOuterLayout = new QBoxLayout(setwin->GetOuterLayoutDirection(), ui->frame);
@@ -214,6 +222,11 @@ void wmiib2::winMapped(xcb_window_t win, const QString &title)
         win_info[win]->SetTitle(title);
         win_info[win]->UpdatePixmap();
     }
+    if (unmapped_wins.contains(win))
+    {
+        unmapped_wins.remove(win);
+        if (unmapped_wins.isEmpty() && iTimer->isActive()) iTimer->stop();
+    }
     RemoveWindowIcon(win);
 }
 
@@ -224,6 +237,11 @@ void wmiib2::winDestroyed(xcb_window_t win)
     {
         if (win_info[win]) win_info[win]->deleteLater();
         win_info.remove(win);
+        if (unmapped_wins.contains(win))
+        {
+            unmapped_wins.remove(win);
+            if (unmapped_wins.isEmpty() && iTimer->isActive()) iTimer->stop();
+        }
     }
     RemoveWindowIcon(win);
 }
@@ -254,18 +272,10 @@ void wmiib2::winIconified(xcb_window_t win)
     // should always be true
     if (win_info.contains(win) && win_info[win])
     {
-        if (!(win_icon.contains(win) && win_icon[win]))
+        if (!unmapped_wins.contains(win))
         {
-            // should always be true
-            QLabel *newItem = new QLabel(ui->frame);
-            QPixmap win_pm = win_info[win]->GetPixmap(false).scaled(saved_icon_size, saved_icon_size, Qt::KeepAspectRatio);
-            newItem->setPixmap(win_pm);
-            newItem->setFixedSize(win_pm.size());
-            newItem->setToolTip(win_info[win]->GetTitle());
-            // find the place to insert into layouts
-            AddWidgetToLayout(newItem);
-            win_icon[win] = newItem;
-            AdjustFrameSize();
+            unmapped_wins[win] = QDateTime::currentDateTimeUtc().addMSecs(UNMAP_DESTROY_GRACE);
+            if (!iTimer->isActive()) iTimer->start(UNMAP_DESTROY_GRACE + 1LL);
         }
     }
 }
@@ -513,8 +523,6 @@ void wmiib2::RemoveWindowIcon(xcb_window_t win)
         win_icon.remove(win);
         AdjustFrameSize();
     }
-
-
 }
 
 void wmiib2::AddWidgetToLayout(QLabel *newItem)
@@ -637,3 +645,43 @@ int wmiib2::GetLayoutSize(int layoutIndex)
     return currentSize;
 }
 
+void wmiib2::DelayedIconCreator()
+{
+    iTimer->stop();
+    QMap<xcb_window_t, QDateTime>::iterator p;
+    QList<xcb_window_t> iconified_wins;
+    QDateTime now = QDateTime::currentDateTimeUtc();
+    qint64 next_event = 0LL;
+    for (p = unmapped_wins.begin(); p != unmapped_wins.end(); ++p)
+    {
+        if (p.value() <= now)
+        {
+            iconified_wins.append(p.key());
+        }
+        else
+        {
+            qint64 msto = now.msecsTo(p.value());
+            if ((!next_event) || (msto < next_event)) next_event = msto;
+        }
+    }
+    for (int i = 0; i < iconified_wins.count(); ++i)
+    {
+        xcb_window_t win = iconified_wins.at(i);
+        // I've waited long enough!
+        if (!(win_icon.contains(win) && win_icon[win]))
+        {
+            // should always be true
+            QLabel *newItem = new QLabel(ui->frame);
+            QPixmap win_pm = win_info[win]->GetPixmap(false).scaled(saved_icon_size, saved_icon_size, Qt::KeepAspectRatio);
+            newItem->setPixmap(win_pm);
+            newItem->setFixedSize(win_pm.size());
+            newItem->setToolTip(win_info[win]->GetTitle());
+            // find the place to insert into layouts
+            AddWidgetToLayout(newItem);
+            win_icon[win] = newItem;
+        }
+        unmapped_wins.remove(win);
+    }
+    if (iconified_wins.count()) AdjustFrameSize();
+    if (next_event) iTimer->start(next_event + 1LL);
+}
