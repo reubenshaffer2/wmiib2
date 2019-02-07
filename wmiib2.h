@@ -59,8 +59,6 @@ private slots:
     void winIconified(xcb_window_t win);
     void winTitleChanged(xcb_window_t win, const QString &title);
     void DeiconifyWindow(xcb_window_t win);
-    void AdjustFrameSize();
-    void GenerateMask();
     void SettingsChanged();
     void DelayedIconCreator();
 
@@ -74,6 +72,8 @@ private:
     QBoxLayout *itemOuterLayout;
     QList<QBoxLayout *> itemInnerLayouts;
     SettingsWindow *setwin;
+    void AdjustFrameSize(QWidgetList newWidgets = QWidgetList());
+    void GenerateMask();
     void RemoveWindowIcon(xcb_window_t win);
     void AddWidgetToLayout(QLabel *newItem);
     void TryToShiftItemInLayout(int layoutIndex);

@@ -39,6 +39,7 @@ along with WMIIB2.  If not, see <https://www.gnu.org/licenses/>.
 #include "settingswindow.h"
 #include <QMessageBox>
 #include <QDateTime>
+#include <unistd.h>
 
 // the amount of grace time before an unmapped window is considered
 // iconified if it hasn't yet been destroyed, in msec.
@@ -195,6 +196,7 @@ void wmiib2::resizeEvent(QResizeEvent *e)
     int newY = setwin->IsFromTop() ? 0 : screen_size.height() - height();
     move(newX, newY);
     // make sure the move event gets processed first
+    usleep(100000L);
     QApplication::processEvents();
     QWidget::resizeEvent(e);
 }
@@ -327,62 +329,78 @@ void wmiib2::DeiconifyWindow(xcb_window_t win)
     errorHandler(QString("DeiconifyWindow: query tree window 0x%1").arg(win, 0, 16), &err);
 }
 
-void wmiib2::AdjustFrameSize()
+void wmiib2::AdjustFrameSize(QWidgetList newWidgets)
 {
     //qDebug() << "wmiib2::AdjustFrameSize()";
     int icon_size = setwin->GetIconSize();
     QBoxLayout::Direction direction = setwin->GetInnerLayoutDirection();
     QSize screen_size = QGuiApplication::primaryScreen()->size();
-    // minimum
     int newWidth = 0;
     int newHeight = 0;
     if (setwin->DoesGrow())
     {
+        // first put width/height in appropriate limit variables
+        int innerLimit, outerLimit;
         if (direction == QBoxLayout::TopToBottom || direction == QBoxLayout::BottomToTop)
         {
-            // vertical, then horizontal
-            for (int i = 0; i < itemInnerLayouts.count(); ++i)
-            {
-                int colHeight = 0;
-                int colWidth = 0;
-                QBoxLayout *innerLayout = itemInnerLayouts.at(i);
-                for (int j = 0; j < innerLayout->count(); ++j)
-                {
-                    QLayoutItem *item = innerLayout->itemAt(j);
-                    if (item && item->widget())
-                    {
-                        QSize itemSize = item->widget()->size();
-                        if (itemSize.width() > colWidth) colWidth = itemSize.width();
-                        colHeight += (10 + itemSize.height());
-                    }
-                    else colHeight += 10; // empty item, shouldn't happen
-                }
-                if (colHeight > newHeight) newHeight = colHeight;
-                newWidth += (10 + colWidth);
-            }
+            innerLimit = screen_size.height();
+            outerLimit = screen_size.width();
         }
         else
         {
-            // horizontal, then vertical
-            for (int i = 0; i < itemInnerLayouts.count(); ++i)
+            innerLimit = screen_size.width();
+            outerLimit = screen_size.height();
+        }
+        // then build an "allWidgets" that has the old and new together
+        QWidgetList allWidgets;
+        for (int i = 0; i < itemInnerLayouts.count(); ++i)
+        {
+            QBoxLayout *innerLayout = itemInnerLayouts.at(i);
+            for (int j = 0; j < innerLayout->count(); ++j)
             {
-                int colHeight = 0;
-                int colWidth = 0;
-                QBoxLayout *innerLayout = itemInnerLayouts.at(i);
-                for (int j = 0; j < innerLayout->count(); ++j)
-                {
-                    QLayoutItem *item = innerLayout->itemAt(j);
-                    if (item && item->widget())
-                    {
-                        QSize itemSize = item->widget()->size();
-                        if (itemSize.height() > colHeight) colHeight = itemSize.height();
-                        colWidth += (10 + itemSize.width());
-                    }
-                    else colWidth += 10; // empty item, shouldn't happen
-                }
-                if (colWidth > newWidth) newWidth = colWidth;
-                newHeight += (10 + colHeight);
+                QLayoutItem *item = innerLayout->itemAt(j);
+                if (item && item->widget()) allWidgets.append(item->widget());
             }
+        }
+        allWidgets.append(newWidgets);
+        // now determine the new sizes
+        // just use arrays of 2 so not to confuse width and height
+        int outerSize[2] = {setwin->GetIconSize() + 10, setwin->GetIconSize() + 10};
+        int innerSize = 0;
+        int counter = 0;
+        for (QWidget *widget : allWidgets)
+        {
+            int wSize;
+            if (direction == QBoxLayout::TopToBottom || direction == QBoxLayout::BottomToTop)
+                wSize = widget->height();
+            else
+                wSize = widget->width();
+            if ((innerSize + wSize + 10) <= innerLimit)
+            {
+                // we can add to this layout
+                innerSize += (wSize + 10);
+                if (outerSize[0] < innerSize) outerSize[0] = innerSize;
+            }
+            else
+            {
+                // need to jump to next inner layout
+                outerSize[1] += setwin->GetIconSize() + 10;
+                if (outerSize[1] > outerLimit) outerSize[1] = outerLimit;
+                innerSize = (wSize + 10);
+                // shouldn't need to even look at outerSize[0] this time
+            }
+            ++counter;
+        }
+        // so now outerSize should contain the layout size plus the outer margin
+        if (direction == QBoxLayout::TopToBottom || direction == QBoxLayout::BottomToTop)
+        {
+            newWidth = outerSize[1];
+            newHeight = outerSize[0];
+        }
+        else
+        {
+            newWidth = outerSize[0];
+            newHeight = outerSize[1];
         }
     }
     else
@@ -538,8 +556,7 @@ void wmiib2::AddWidgetToLayout(QLabel *newItem)
             if ((currentSize + newItemSize.height() + 10) <= screen_size.height())
             {
                 // append it here
-                itemInnerLayouts.at(i)->addWidget(newItem);
-                itemInnerLayouts.at(i)->setAlignment(newItem, setwin->GetIconAlignment());
+                itemInnerLayouts.at(i)->addWidget(newItem, 0, setwin->GetIconAlignment());
                 return;
             }
         }
@@ -549,8 +566,7 @@ void wmiib2::AddWidgetToLayout(QLabel *newItem)
             if ((currentSize + newItemSize.width() + 10) <= screen_size.width())
             {
                 // append it here
-                itemInnerLayouts.at(i)->addWidget(newItem);
-                itemInnerLayouts.at(i)->setAlignment(newItem, setwin->GetIconAlignment());
+                itemInnerLayouts.at(i)->addWidget(newItem, 0, setwin->GetIconAlignment());
                 return;
             }
         }
@@ -563,8 +579,7 @@ void wmiib2::AddWidgetToLayout(QLabel *newItem)
     itemOuterLayout->addLayout(innerLayout);
     itemOuterLayout->setAlignment(innerLayout, setwin->GetIconAlignment());
     itemInnerLayouts.append(innerLayout);
-    innerLayout->addWidget(newItem);
-    innerLayout->setAlignment(newItem, setwin->GetIconAlignment());
+    innerLayout->addWidget(newItem, 0, setwin->GetIconAlignment());
 }
 
 void wmiib2::TryToShiftItemInLayout(int layoutIndex)
@@ -675,11 +690,18 @@ void wmiib2::DelayedIconCreator()
             newItem->setFixedSize(win_pm.size());
             newItem->setToolTip(win_info[win]->GetTitle());
             // find the place to insert into layouts
-            AddWidgetToLayout(newItem);
             win_icon[win] = newItem;
         }
         unmapped_wins.remove(win);
     }
-    if (iconified_wins.count()) AdjustFrameSize();
+    if (iconified_wins.count())
+    {
+        QWidgetList widgetlist;
+        for (xcb_window_t win : iconified_wins) widgetlist.append(win_icon[win]);
+        AdjustFrameSize(widgetlist);
+        usleep(100000L);
+        QApplication::processEvents();
+        for (xcb_window_t win : iconified_wins) AddWidgetToLayout(win_icon[win]);
+    }
     if (next_event) iTimer->start(next_event + 1LL);
 }
