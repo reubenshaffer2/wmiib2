@@ -672,7 +672,7 @@ void wmiib2::DelayedIconCreator()
         {
             // should always be true
             QLabel *newItem = new QLabel(ui->frame);
-            QPixmap win_pm = win_info[win]->GetPixmap(false).scaled(saved_icon_size, saved_icon_size, Qt::KeepAspectRatio);
+            QPixmap win_pm = win_info[win]->GetPixmap(false).scaled(saved_icon_size, saved_icon_size, Qt::KeepAspectRatio, Qt::SmoothTransformation);
             newItem->setPixmap(win_pm);
             newItem->setFixedSize(win_pm.size());
             newItem->setToolTip(win_info[win]->GetTitle());
