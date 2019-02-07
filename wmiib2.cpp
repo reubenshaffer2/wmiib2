@@ -50,6 +50,8 @@ wmiib2::wmiib2(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    evfilt = new xcbEventFilter;
+
     comp_version_ok = false;
     connection = QX11Info::connection();
 
@@ -81,12 +83,7 @@ wmiib2::wmiib2(QWidget *parent) :
         comp_version_ok = (comp_ver_reply->minor_version >= 2);
         free(comp_ver_reply);
     }
-    if (err)
-    {
-        qDebug() << "wmiib2::wmiib2: query composite version XCB error: " << err->error_code;
-        free(err);
-        err = nullptr;
-    }
+    errorHandler("wmiib2: query composite version", &err);
     damg_version_ok = false;
     xcb_damage_query_version_cookie_t damg_ver_cookie = xcb_damage_query_version(connection, 1, 1);
     xcb_damage_query_version_reply_t *damg_ver_reply = xcb_damage_query_version_reply(connection, damg_ver_cookie, &err);
@@ -95,12 +92,7 @@ wmiib2::wmiib2(QWidget *parent) :
         damg_version_ok = (damg_ver_reply->major_version >= 1 && damg_ver_reply->minor_version >= 1);
         free(damg_ver_reply);
     }
-    if (err)
-    {
-        qDebug() << "wmiib2::wmiib2: query damage version XCB error: " << err->error_code;
-        free(err);
-        err = nullptr;
-    }
+    errorHandler("wmiib2: query damage version", &err);
     if (!(comp_version_ok && damg_version_ok)) return;
     // create settings window and connect to slot
     setwin = new SettingsWindow;
@@ -126,8 +118,7 @@ wmiib2::wmiib2(QWidget *parent) :
     itemOuterLayout->addLayout(innerLayout);
     itemOuterLayout->setAlignment(innerLayout, setwin->GetIconAlignment());
     itemInnerLayouts.append(innerLayout);
-    // create, set up, and install event filter.
-    evfilt = new xcbEventFilter;
+    // set up and install event filter.
     connect(evfilt, SIGNAL(WindowMapped(xcb_window_t,QString)), this, SLOT(winMapped(xcb_window_t,QString)));
     connect(evfilt, SIGNAL(WindowDestroyed(xcb_window_t)), this, SLOT(winDestroyed(xcb_window_t)));
     connect(evfilt, SIGNAL(WindowIconified(xcb_window_t)), this, SLOT(winIconified(xcb_window_t)));
@@ -142,6 +133,11 @@ wmiib2::wmiib2(QWidget *parent) :
 wmiib2::~wmiib2()
 {
     delete ui;
+}
+
+void wmiib2::errorHandler(const QString &prefix, xcb_generic_error_t **errp)
+{
+    if (evfilt) evfilt->errorHandler(QString("wmiib2::%1").arg(prefix), errp);
 }
 
 void wmiib2::changeEvent(QEvent *e)
@@ -194,6 +190,12 @@ void wmiib2::showEvent(QShowEvent *e)
 
 void wmiib2::resizeEvent(QResizeEvent *e)
 {
+    QSize screen_size = QGuiApplication::primaryScreen()->size();
+    int newX = setwin->IsFromLeft() ? 0 : screen_size.width() - width();
+    int newY = setwin->IsFromTop() ? 0 : screen_size.height() - height();
+    move(newX, newY);
+    // make sure the move event gets processed first
+    QApplication::processEvents();
     QWidget::resizeEvent(e);
 }
 
@@ -210,11 +212,8 @@ void wmiib2::winMapped(xcb_window_t win, const QString &title)
     {
         xcb_void_cookie_t void_cookie = xcb_composite_redirect_window_checked(connection, win, XCB_COMPOSITE_REDIRECT_AUTOMATIC);
         xcb_generic_error_t *err = xcb_request_check(connection, void_cookie);
-        if (err)
-        {
-            qDebug() << "wmiib2::winMapped: composite_redirect_window XCB error " << err->error_code;
-            free(err);
-        }
+        //if (err) TODO: redirect failed
+        errorHandler("wmiib2:winMapped: composite_redirect_window", &err);
         win_info[win] = new WinInfo(win, title);
     }
     else
@@ -299,10 +298,14 @@ void wmiib2::DeiconifyWindow(xcb_window_t win)
     {
         xcb_window_t rootwin = qtree_reply->root;
         // map the window
-        xcb_map_window(connection, win);
+        xcb_void_cookie_t void_cookie = xcb_map_window_checked(connection, win);
+        err = xcb_request_check(connection, void_cookie);
+        errorHandler(QString("DeiconifyWindow: map window 0x%1").arg(win, 0, 16), &err);
         // raise the window
         uint32_t values[] = { XCB_STACK_MODE_ABOVE };
-        xcb_configure_window(connection, win, XCB_CONFIG_WINDOW_STACK_MODE, values);
+        void_cookie = xcb_configure_window_checked(connection, win, XCB_CONFIG_WINDOW_STACK_MODE, values);
+        err = xcb_request_check(connection, void_cookie);
+        errorHandler(QString("DeiconifyWindow: configure window 0x%1").arg(win, 0, 16), &err);
         // make it the active window
         xcb_client_message_event_t client_message_event;
         client_message_event.response_type = XCB_CLIENT_MESSAGE;
@@ -315,15 +318,13 @@ void wmiib2::DeiconifyWindow(xcb_window_t win)
         client_message_event.data.data32[2] = (uint32_t)winId();
         client_message_event.data.data32[3] = 0UL;
         client_message_event.data.data32[4] = 0UL;
-        xcb_send_event(connection, 1, rootwin, XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT, (const char *)&client_message_event);
+        void_cookie = xcb_send_event_checked(connection, 1, rootwin, XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT, (const char *)&client_message_event);
+        err = xcb_request_check(connection, void_cookie);
+        errorHandler(QString("DeiconifyWindow: send event (client message) window 0x%1").arg(win, 0, 16), &err);
         xcb_flush(connection);
         free(qtree_reply);
     }
-    if (err)
-    {
-        qDebug() << "wmiib2::DeiconifyWindow: XCB Error " << err->error_code;
-        free(err);
-    }
+    errorHandler(QString("DeiconifyWindow: query tree window 0x%1").arg(win, 0, 16), &err);
 }
 
 void wmiib2::AdjustFrameSize()
@@ -395,9 +396,6 @@ void wmiib2::AdjustFrameSize()
     if (newHeight < (icon_size + 10)) newHeight = icon_size + 10;
     if (newHeight > screen_size.height()) newHeight = screen_size.height();
     setFixedSize(newWidth, newHeight);
-    int newX = setwin->IsFromLeft() ? 0 : screen_size.width() - newWidth;
-    int newY = setwin->IsFromTop() ? 0 : screen_size.height() - newHeight;
-    move(newX, newY);
 }
 
 void wmiib2::GenerateMask()

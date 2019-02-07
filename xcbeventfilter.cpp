@@ -289,6 +289,23 @@ xcb_timestamp_t xcbEventFilter::GetUserTime()
     return ret;
 }
 
+void xcbEventFilter::errorHandler(const QString &prefix, xcb_generic_error_t **errp)
+{
+    static const char *error_desc[18] = {"None", "Request", "Value", "Window", "Pixmap", "Atom", "Cursor", "Font", "Match", "Drawable", "Access", "Alloc", "Colormap", "Graphics Context", "ID Choice", "Name", "Length", "Implementation" };
+    if (errp && *errp)
+    {
+        xcb_generic_error_t *err = *errp;
+        QString errDesc = QString("(%1)").arg(err->error_code < 18 ? error_desc[err->error_code] : "Unknown");
+        qDebug() << prefix << "XCB Error " << err->error_code << errDesc
+                 << QString("major: %1").arg(err->major_code)
+                 << QString("minor: %1").arg(err->minor_code)
+                 << QString("resource: %1").arg(err->resource_id);
+        free(err);
+        *errp = nullptr;
+    }
+    else if (errp) *errp = nullptr;
+}
+
 xcb_window_t xcbEventFilter::ClientForFrame(xcb_window_t win)
 {
     QMap<xcb_window_t, client_info>::iterator p;
