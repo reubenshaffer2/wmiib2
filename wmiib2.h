@@ -42,6 +42,7 @@ class wmiib2 : public QWidget
 public:
     explicit wmiib2(QWidget *parent = 0);
     ~wmiib2();
+    void errorHandler(const QString &prefix, xcb_generic_error_t **errp);
 
 protected:
     void changeEvent(QEvent *e);
