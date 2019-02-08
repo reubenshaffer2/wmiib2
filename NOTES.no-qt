@@ -1,0 +1,42 @@
+I just wanted to briefly jot down some ideas about this.  It seems like Qt is working against me
+more than it is working for me again, so I'm looking into removing all references to Qt from this
+project and making it just use XCB for everything instead.
+
+There are a few things I need to test first:
+1) I need to make sure that I can draw the pixmaps to the window pretty easily.  It seems like it
+should actually be easier and more efficient, since they are already in the X server and already
+in the format it likes.  It does, however, seem that I should be actually utilizing the damage
+extension, using the render extension to scale the pixmaps on the server, and then, perhaps, not
+using name_window_pixmap since it has the X server keep big extra pixmaps in memory.  I could just
+store the icon-sized pixmaps there instead and update them when the window changes.  I need to
+test all of this to make sure it is correct.
+
+2) I need to make sure that "window gravity" does what I believe it does.  The documentation would
+suggest that a window with southeast gravity would, when requesting a resize, keep the bottom
+right corner where it is and move the other corners instead.  The only way to know for sure is to
+test, and then see if different WMs handle this differently.  The window has an attribute for
+gravity, but there is also a gravity property in WM_SIZE_HINTS which is part of ICCCM spec, so I'm
+not sure if window managers usually pay more attention to the window attributes or WM_SIZE_HINTS
+or what they do when the two don't agree.  Anyway, if this does indeed work as I believe it does,
+I should be able to just set the window position and gravity and not worry about positioning at
+all after that.  I should just be able to resize and the WM should do it correctly.
+
+3) I need to figure out the best way to handle "settings".  There are libraries out there that
+will aid in the rendering of some basic graphical controls, so I may want to look into what could
+be used that won't interfere with things like XCB events or screw with my window attributes or
+properties.
+
+4) I need to make sure that I can get this smooth scaling without having to write a huge amount of
+new code.  I'm hoping that the X server or one of the extensions I'm using can do this server-side
+but, if I must, I can download the image, scale it with some graphics library, and re-upload it to
+the server.  Either way, I need to be able to make these nicely scaled images for the icons.
+
+In addition, I need to look at my current widget classes to see what would need to be done to
+just migrate them away from Qt.  There are really just the two, as WinInfo is nothing more than a
+container and the only thing Qt related that it has are two slots that are only ever called as
+normal methods anyway, and xcbEventFilter would be unnecessary as I would just handle all event
+processing within the wmiib2 or SettingsWindow classes or perhaps write my own event handling
+loop into something else.
+
+I'll update this as I run some tests to see what is going on.
+
