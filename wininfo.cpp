@@ -21,6 +21,7 @@ along with WMIIB2.  If not, see <https://www.gnu.org/licenses/>.
 #include <xcb/composite.h>
 #include <QDebug>
 #include "xcbeventfilter.h"
+#include "atomcache.h"
 
 WinInfo::WinInfo(xcb_window_t win_id, const QString &title, QObject *parent) :
     QObject(parent), xcb_win(win_id), win_title(title)
@@ -49,6 +50,7 @@ WinInfo::~WinInfo()
 
 QPixmap WinInfo::GetPixmap(bool updatenwp)
 {
+    static xcb_atom_t net_wm_icon = AtomCache::GetAtom("_NET_WM_ICON");
     QPixmap ret;
     // ask compositor to associate window with pixmap
     if (updatenwp || !pm_alloced) UpdatePixmap();
@@ -61,9 +63,6 @@ QPixmap WinInfo::GetPixmap(bool updatenwp)
         if (gi_reply)
         {
             int data_len = xcb_get_image_data_length(gi_reply);
-            //qDebug() << "data_len = " << data_len;
-            //qDebug() << "visual = " << gi_reply->visual;
-            //qDebug() << "depth = " << gi_reply->depth;
             uint8_t *data = xcb_get_image_data(gi_reply);
             uchar *imgdat = (uchar*)malloc(data_len);
             if (imgdat)
@@ -77,7 +76,49 @@ QPixmap WinInfo::GetPixmap(bool updatenwp)
         }
         xcbEventFilter::errorHandler("WinInfo::GetPixmap: get_image: ", &err);
     }
+    // fall back to window icon
+    if (ret.isNull())
+    {
+        xcb_get_property_cookie_t prop_cookie = xcb_get_property(connection, 0, xcb_win, net_wm_icon, XCB_ATOM_CARDINAL, 0, 262144UL);
+        xcb_get_property_reply_t *prop_reply;
+        xcb_generic_error_t *err = nullptr;
+        if ((prop_reply = xcb_get_property_reply(connection, prop_cookie, &err)))
+        {
+            uint32_t data_len = prop_reply->value_len;
+            uint8_t data_fmt = prop_reply->format;
+            uint32_t icon_width = 0UL;
+            uint32_t icon_height = 0UL;
+            // we're going to just use the first icon
+            if (data_fmt == 32 && data_len >= 8)
+            {
+                uint32_t *data = (uint32_t *)xcb_get_property_value(prop_reply);
+                icon_width = data[0];
+                icon_height = data[1];
+                uint32_t imgdat_size = icon_width * icon_height * 4;
+                uint32_t data_buflen = xcb_get_property_value_length(prop_reply);
+                if (data_buflen >= (imgdat_size + 8))
+                {
+                    uchar *imgdat = (uchar *)malloc(imgdat_size);
+                    if (imgdat)
+                    {
+                        memcpy(imgdat, &data[2], imgdat_size);
+                        QImage iconImage(imgdat, icon_width, icon_height, QImage::Format_ARGB32, free, imgdat);
+                        ret = QPixmap::fromImage(iconImage);
+                    }
+                }
+            }
+            else
+            {
+                // unknown format
+                if (data_fmt) qDebug() << "WinInfo::GetPixmap: window icon has unrecognized format " << data_fmt;
+            }
+            free(prop_reply);
+        }
+        xcbEventFilter::errorHandler("WinInfo::GetPixmap: get_property _NET_WM_ICON: ", &err);
+    }
+    // fall back to default icon
     if (ret.isNull()) ret = QPixmap(":/resource/images/Default.png");
+    qDebug() << "WinInfo::GetPixmap: returning pixmap: " << ret;
     return ret;
 }
 
