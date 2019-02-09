@@ -430,7 +430,13 @@ void wmiib2::GenerateMask()
         {
             QPoint winpos = p.value()->mapTo(this, QPoint(0, 0));
             QRect winrect(winpos, p.value()->size());
-            painter.fillRect(winrect.marginsAdded(QMargins(1, 3, 1, 1)), Qt::color1);
+            QImage icon_mask = p.value()->pixmap()->toImage().createAlphaMask(Qt::ThresholdAlphaDither);
+            // this doesn't give a very nice mask and it's a heavy operation
+            // QImage icon_mask = p.value()->pixmap()->createHeuristicMask(true).toImage();
+            // TODO: add a border to the mask
+            if (icon_mask.isNull())
+                painter.fillRect(winrect.marginsAdded(QMargins(1, 1, 1, 1)), Qt::color1);
+            else painter.drawImage(winrect, icon_mask);
         }
         int btnX = setwin->IsFromLeft() ? 1 : width() - 9;
         int btnY = setwin->IsFromTop() ? 1 : height() - 9;
