@@ -36,7 +36,7 @@ public:
     bool nativeEventFilter(const QByteArray &eventType, void *message, long *) override;
     void GetClientListUpdate(xcb_window_t rootwin);
     static xcb_timestamp_t GetUserTime();
-    static void errorHandler(const QString &prefix, xcb_generic_error_t **errp);
+    static bool errorHandler(const QString &prefix, xcb_generic_error_t **errp);
 
 signals:
     void WindowMapped(xcb_window_t, QString);
