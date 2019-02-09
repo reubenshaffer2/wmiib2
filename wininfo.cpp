@@ -20,6 +20,7 @@ along with WMIIB2.  If not, see <https://www.gnu.org/licenses/>.
 #include <QX11Info>
 #include <xcb/composite.h>
 #include <QDebug>
+#include "xcbeventfilter.h"
 
 WinInfo::WinInfo(xcb_window_t win_id, const QString &title, QObject *parent) :
     QObject(parent), xcb_win(win_id), win_title(title)
@@ -35,12 +36,7 @@ WinInfo::WinInfo(xcb_window_t win_id, const QString &title, QObject *parent) :
         win_depth = gg_reply->depth;
         free(gg_reply);
     }
-    if (err)
-    {
-        qDebug() << "WinInfo::WinInfo: get_geometry XCB error " << err->error_code;
-        free(err);
-        return;
-    }
+    xcbEventFilter::errorHandler("WinInfo::WinInfo: get_geometry: ", &err);
     xcb_pm = xcb_generate_id(connection);
     pm_alloced = false;
     UpdatePixmap();
@@ -79,11 +75,7 @@ QPixmap WinInfo::GetPixmap(bool updatenwp)
             else qDebug() << "WinInfo::GetPixmap: malloc failed for imgdat";
             free(gi_reply);
         }
-        if (err)
-        {
-            qDebug() << "WinInfo::GetPixmap: get_image XCB error " << err->error_code;
-            free(err);
-        }
+        xcbEventFilter::errorHandler("WinInfo::GetPixmap: get_image: ", &err);
     }
     if (ret.isNull()) ret = QPixmap(":/resource/images/Default.png");
     return ret;
@@ -107,20 +99,19 @@ void WinInfo::UpdatePixmap()
     {
         void_cookie = xcb_free_pixmap_checked(connection, xcb_pm);
         err = xcb_request_check(connection, void_cookie);
-        if (err)
-        {
-            qDebug() << "WinInfo::UpdatePixmap: free_pixmap XCB error " << err->error_code;
-            free(err);
-        }
-        else pm_alloced = false;
+        if (!xcbEventFilter::errorHandler("WinInfo::UpdatePixmap: free_pixmap: ", &err)) pm_alloced = false;
     }
-    // TODO: check that window is mapped (viewable) before trying this to prevent errors
-    void_cookie = xcb_composite_name_window_pixmap_checked(connection, xcb_win, xcb_pm);
-    err = xcb_request_check(connection, void_cookie);
-    if (err)
+    xcb_get_window_attributes_cookie_t ga_cookie = xcb_get_window_attributes(connection, xcb_win);
+    xcb_get_window_attributes_reply_t *ga_reply = xcb_get_window_attributes_reply(connection, ga_cookie, &err);
+    if (ga_reply)
     {
-        qDebug() << "WinInfo::UpdatePixmap: name_window_pixmap XCB error " << err->error_code;
-        free(err);
+        if (ga_reply->map_state != XCB_MAP_STATE_UNMAPPED && !ga_reply->override_redirect)
+        {
+            void_cookie = xcb_composite_name_window_pixmap_checked(connection, xcb_win, xcb_pm);
+            xcb_generic_error_t *err2 = xcb_request_check(connection, void_cookie);
+            if (!xcbEventFilter::errorHandler("WinInfo::UpdatePixmap: name_window_pixmap: ", &err2)) pm_alloced = true;
+        }
+        free(ga_reply);
     }
-    else pm_alloced = true;
+    xcbEventFilter::errorHandler("WinInfo::UpdatePixmap: get_window_attributes: ", &err);
 }
